@@ -38,13 +38,18 @@ def first_n_articles(rdd, nlines):
     return title_articles
 
 def get_rdd():
-    sc = ps.SparkContext()
+    try:
+        sc = ps.SparkContext()
+    except:
+        pass
     try:
         ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
         SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
         link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
     except:
-        link = 's3n://wikisample10/sample2'
+        ACCESS_KEY = 'AKIAIDSUBTVGZHCZNC4A'
+        SECRET_ACCESS_KEY='ZyEgDQTGzXfZR47mGsxbpNqkB76FP0IUaRgd6dQG'
+        link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
     wiki = sc.textFile(link)
     return wiki
 
