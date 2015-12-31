@@ -44,9 +44,7 @@ def get_rdd():
         SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
         link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
     except:
-        ACCESS_KEY = 'AKIAIDSUBTVGZHCZNC4A'
-        SECRET_ACCESS_KEY='ZyEgDQTGzXfZR47mGsxbpNqkB76FP0IUaRgd6dQG'
-        link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
+        link = 's3n://wikisample10/sample2' 
     wiki = sc.textFile(link)
     return wiki
 
