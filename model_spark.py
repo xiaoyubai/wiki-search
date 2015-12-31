@@ -38,7 +38,7 @@ def first_n_articles(rdd, nlines):
     return title_articles
 
 def get_rdd():
-    sc = ps.SparkContext('local[4]')
+    sc = ps.SparkContext()
     try:
         ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
         SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
