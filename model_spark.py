@@ -44,7 +44,7 @@ def get_rdd():
         SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
         link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
     except:
-        link = 's3n://wikisample10/sample2' 
+        link = 's3n://wikisample10/sample2'
     wiki = sc.textFile(link)
     return wiki
 
@@ -92,7 +92,8 @@ def pred_category(model_vect, test, model_pred):
 
 
 if __name__ == '__main__':
-    filename = "../data/test.adjlist"
+
+    filename = "test.adjlist"
     first_n_lines = 2000
     redirect_str = '^#REDIRECT'
     rdd = get_rdd()
