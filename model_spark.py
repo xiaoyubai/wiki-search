@@ -125,3 +125,4 @@ if __name__ == '__main__':
                        [pr[important_article] for important_article in important_articles], \
                        pair_cos):
             print row
+    sc.stop()
