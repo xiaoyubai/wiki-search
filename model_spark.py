@@ -46,6 +46,7 @@ def get_rdd():
     except:
         link = 's3n://wikisample10/sample2'
     wiki = sc.textFile(link)
+    sc.stop()
     return wiki
 
 
@@ -125,4 +126,3 @@ if __name__ == '__main__':
                        [pr[important_article] for important_article in important_articles], \
                        pair_cos):
             print row
-    sc.stop()
