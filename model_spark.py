@@ -109,6 +109,7 @@ if __name__ == '__main__':
     redirect_str = '^#REDIRECT'
     link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
     wiki = sc.textFile(link)
+    # how to get sc from ipython
     rdd = wiki.filter(lambda x: not re.match(redirect_str, x))
     write_link_to_file(rdd, filename, first_n_lines)
     articles = first_n_articles(rdd, first_n_lines)
