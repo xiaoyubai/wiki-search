@@ -97,8 +97,14 @@ if __name__ == '__main__':
     filename = "test.adjlist"
     first_n_lines = 2000
     redirect_str = '^#REDIRECT'
-    rdd = get_rdd()
-    rdd = rdd.filter(lambda x: not re.match(redirect_str, x))
+    try:
+        ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
+        SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+        link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
+    except:
+        link = 's3n://wikisample10/sample2'
+    wiki = sc.textFile(link)    
+    rdd = wiki.filter(lambda x: not re.match(redirect_str, x))
 
     write_link_to_file(rdd, filename, first_n_lines)
     articles = first_n_articles(rdd, first_n_lines)
