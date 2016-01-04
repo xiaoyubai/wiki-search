@@ -37,7 +37,7 @@ def first_n_articles(rdd, nlines):
     title_articles = np.array(rdd.map(get_content).take(nlines))
     return title_articles
 
-def get_rdd():
+def get_rdd(sc):
     #sc = ps.SparkContext()
     try:
         ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     filename = "test.adjlist"
     first_n_lines = 2000
     redirect_str = '^#REDIRECT'
-    rdd = get_rdd()
+    rdd = get_rdd(sc)
     rdd = rdd.filter(lambda x: not re.match(redirect_str, x))
 
     write_link_to_file(rdd, filename, first_n_lines)
