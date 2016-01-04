@@ -97,10 +97,7 @@ if __name__ == '__main__':
     filename = "test.adjlist"
     first_n_lines = 2000
     redirect_str = '^#REDIRECT'
-    try:
-        rdd = get_rdd()
-    except:
-        pass
+    rdd = get_rdd()
     rdd = rdd.filter(lambda x: not re.match(redirect_str, x))
 
     write_link_to_file(rdd, filename, first_n_lines)
