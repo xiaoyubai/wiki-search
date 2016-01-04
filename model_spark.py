@@ -12,9 +12,25 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.naive_bayes import GaussianNB, MultinomialNB
 from sklearn.metrics.pairwise import pairwise_distances
+import json
+
 
 
 NUMBER_CLUSTERS = 10
+
+def load_keys(filename):
+    """
+    create a json file with:
+    cat aws.json
+    {"ACCESS_KEY": "ACCESS_KEY", "SECRET_ACCESS_KEY": "SECRET_ACCESS_KEY"}
+    Use json.load to load keys
+    """
+    with open(filename) as f:
+        data = json.load(f)
+        ACCESS_KEY = data['ACCESS_KEY']
+        SECRET_ACCESS_KEY = data['SECRET_ACCESS_KEY']
+    return ACCESS_KEY, SECRET_ACCESS_KEY
+
 
 
 def get_title_link(article):
@@ -37,18 +53,6 @@ def first_n_articles(rdd, nlines):
     title_articles = np.array(rdd.map(get_content).take(nlines))
     return title_articles
 
-def get_rdd():
-    sc = ps.SparkContext()
-    try:
-        ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
-        SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-        link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
-    except:
-        link = 's3n://wikisample10/sample2'
-    wiki = sc.textFile(link)
-    sc.stop()
-    return wiki
-
 
 def write_link_to_file(rdd, filename, nlines):
     link_list = rdd.map(get_title_link).take(nlines)
@@ -63,17 +67,22 @@ def write_link_to_file(rdd, filename, nlines):
 def get_target_page(rdd, nlines=10):
     pages = rdd.map()
 
+
+# need change for nltk
 def pre_processing(articles, model=None):
     tokenizer = RegexpTokenizer(r'\w+')
     wordnet = WordNetLemmatizer()
     word_tokens = [tokenizer.tokenize(article.lower()) for article in articles]
-    word_stem = [" ".join([wordnet.lemmatize(word) for word in row]) for row in word_tokens]
+    # word_stem = [" ".join([wordnet.lemmatize(word) for word in row]) for row in word_tokens]
     if model:
-        mat = model.transform(word_stem).toarray()
+        mat = model.transform(word_tokens).toarray()
+        # mat = model.transform(word_stem).toarray()
         return mat
     else:
         model = TfidfVectorizer(stop_words='english', tokenizer=word_tokenize, decode_error='ignore')
-        mat = model.fit_transform(word_stem).toarray()
+        # mat = model.fit_transform(word_stem).toarray()
+        word_tokensss = [" ".join([word for word in row]) for row in word_tokens]
+        mat = model.fit_transform(word_tokensss).toarray()
         return mat, model
 
 def kmeans_label(mat, scoring=False):
@@ -94,18 +103,13 @@ def pred_category(model_vect, test, model_pred):
 
 if __name__ == '__main__':
 
+    ACCESS_KEY, SECRET_ACCESS_KEY = load_keys('../aws.json')
     filename = "test.adjlist"
     first_n_lines = 2000
     redirect_str = '^#REDIRECT'
-    try:
-        ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
-        SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-        link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
-    except:
-        link = 's3n://wikisample10/sample2'
-    wiki = sc.textFile(link)    
+    link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
+    wiki = sc.textFile(link)
     rdd = wiki.filter(lambda x: not re.match(redirect_str, x))
-
     write_link_to_file(rdd, filename, first_n_lines)
     articles = first_n_articles(rdd, first_n_lines)
     titles = np.array([row[0] for row in articles if row])
@@ -115,8 +119,9 @@ if __name__ == '__main__':
     pr = nx.pagerank(G)
     labels = kmeans_label(tif_mat)
 
-    test_key = 'subject'
-    test_category = 'philosophy'
+
+    test_key = 'recall'
+    test_category = 'statistics'
     model_pred = MultinomialNB()
     model_pred.fit(tif_mat, labels)
     #y_pred, y_prob = pred_category(model_vect=model_vect, test=test_category, model_pred=model_pred)
