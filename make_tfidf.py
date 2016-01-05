@@ -65,7 +65,6 @@ class TfToken(object):
         self._create_rdd()
         hashingTF = HashingTF()
         tf = hashingTF.transform(self.token_rdd)
-        tf.cache()
         idf = IDF(minDocFreq=2).fit(tf)
         tfidf = idf.transform(tf)
         return tfidf
