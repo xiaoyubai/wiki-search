@@ -4,10 +4,12 @@ import pyspark as ps
 import os
 import re
 from nltk.stem.porter import PorterStemmer
-from nltk.corpus import stopwords
+from nltk.corpus import stopwords, words
 import string
 from collections import Counter
 from pyspark.mllib.clustering import KMeans
+from nltk.stem.wordnet import WordNetLemmatizer
+
 PUNCTUATION = set(string.punctuation)
 STOPWORDS = set(stopwords.words('english'))
 
@@ -64,8 +66,8 @@ def tokenize(text):
         no_punctuation.append(punct_removed)
     no_stopwords = [w for w in no_punctuation if not w in STOPWORDS]
 
-    STEMMER = PorterStemmer()
-    stemmed = [STEMMER.stem(w) for w in no_stopwords]
+    Lemm = WordNetLemmatizer()
+    stemmed = [Lemm.lemmatize(w) for w in no_stopwords]
     return [w for w in stemmed if w]
 
 def get_tf(word_lst):
@@ -82,22 +84,42 @@ def kmeans_label(mat, scoring=False):
         print "kmeans score: ", silhouette_score(tif_mat, labels, metric='euclidean')
     return labels
 
+def get_vocab():
+    word_list = words.words()
+    lowercased = [t.lower() for t in word_list]
+    Lemm = WordNetLemmatizer()
+    stemmed = [Lemm.lemmatize(w) for w in lowercased]
+    vocab = list(set(stemmed))
+    return vocab
 
 if __name__ == '__main__':
-    first_n_lines = 2000
+    # take n samples
+    first_n_lines = 200
     redirect_str = '^#REDIRECT'
-    sc = ps.SparkContext('local[4]')
+    # get access_key from os or json file
     try:
         ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
         SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
     except:
         ACCESS_KEY, SECRET_ACCESS_KEY = load_keys('../aws.json')
+    # connect to s3
     link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
     wiki_rdd = sc.textFile(link)
+    # take first n samples
     wiki_rdd_samples = sc.parallelize(wiki_rdd.take(first_n_lines), 5)
+    # remove redirect lines
     wiki_no_redirect_rdd = wiki_rdd_samples.filter(lambda line: '#REDIRECT' not in line)
+    # tokenize articles
     token_rdd = wiki_no_redirect_rdd.map(tokenize)
-    vocab = token_rdd.flatMap(lambda x: x).distinct().collect()
+
+    # vocab from english corpus
+    vocab = get_vocab()
+
+    # vocab from combined words in wikipedia
+    # repeated_vocab = token_rdd.flatMap(lambda x: x)
+    # rv = token_rdd.reduce(lambda v1, v2: list(set(v1 + v2)))
+    # vocab = repeated_vocab.distinct().collect()
+
     tf_rdd = token_rdd.map(get_tf)
     total_doc_count = tf_rdd.count()
     times_words_in_doc = tf_rdd.map(lambda tf_lst: ((np.array(tf_lst) > 0) + 0)).sum()
