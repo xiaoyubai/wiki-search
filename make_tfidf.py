@@ -37,8 +37,8 @@ class TfToken(object):
                 self.access_key = data['ACCESS_KEY']
                 self.secret_access_key = data['SECRET_ACCESS_KEY']
 
-        def create_link(self, aws_link):
-            self.link = 's3n://%s:%s@%s' % (self.access_key, self.secret_access_key, aws_link)
+    def create_link(self, aws_link):
+        self.link = 's3n://%s:%s@%s' % (self.access_key, self.secret_access_key, aws_link)
 
     def _tokenizing(self, text):
         regex = re.compile('<.+?>|[^a-zA-Z]')
