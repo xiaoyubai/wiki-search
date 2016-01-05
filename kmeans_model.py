@@ -87,7 +87,7 @@ def get_vocab():
     word_list = words.words()
     lowercased = [t.lower() for t in word_list]
     STEMMER = PorterStemmer()
-    stemmed = [STEMMER.stem(w) for w in no_stopwords]
+    stemmed = [STEMMER.stem(w) for w in lowercased]
     vocab = list(set(stemmed))
     return vocab
 
