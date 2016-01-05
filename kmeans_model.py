@@ -4,11 +4,10 @@ import pyspark as ps
 import os
 import re
 from nltk.stem.porter import PorterStemmer
-from nltk.corpus import stopwords, words
+from nltk.corpus import stopwords, words, wordnet
 import string
 from collections import Counter
 from pyspark.mllib.clustering import KMeans
-from nltk.stem.wordnet import WordNetLemmatizer
 
 PUNCTUATION = set(string.punctuation)
 STOPWORDS = set(stopwords.words('english'))
@@ -54,7 +53,7 @@ def get_content(article):
 #         mat = model.fit_transform(word_stem).toarray()
 #         return mat, model
 
-def tokenize(text):
+def tokenizing(text):
     regex = re.compile('<.+?>|[^a-zA-Z]')
     clean_txt = regex.sub(' ', text)
     tokens = clean_txt.split()
@@ -66,8 +65,8 @@ def tokenize(text):
         no_punctuation.append(punct_removed)
     no_stopwords = [w for w in no_punctuation if not w in STOPWORDS]
 
-    Lemm = WordNetLemmatizer()
-    stemmed = [Lemm.lemmatize(w) for w in no_stopwords]
+    STEMMER = PorterStemmer()
+    stemmed = [STEMMER.stem(w) for w in no_stopwords]
     return [w for w in stemmed if w]
 
 def get_tf(word_lst):
@@ -104,13 +103,15 @@ if __name__ == '__main__':
         ACCESS_KEY, SECRET_ACCESS_KEY = load_keys('../aws.json')
     # connect to s3
     link = 's3n://%s:%s@wikisample10/sample2' % (ACCESS_KEY, SECRET_ACCESS_KEY)
+
+
     wiki_rdd = sc.textFile(link)
     # take first n samples
     wiki_rdd_samples = sc.parallelize(wiki_rdd.take(first_n_lines), 5)
     # remove redirect lines
     wiki_no_redirect_rdd = wiki_rdd_samples.filter(lambda line: '#REDIRECT' not in line)
     # tokenize articles
-    token_rdd = wiki_no_redirect_rdd.map(tokenize)
+    token_rdd = wiki_no_redirect_rdd.map(tokenizing)
 
     # vocab from english corpus
     vocab = get_vocab()
