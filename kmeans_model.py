@@ -86,8 +86,8 @@ def kmeans_label(mat, scoring=False):
 def get_vocab():
     word_list = words.words()
     lowercased = [t.lower() for t in word_list]
-    Lemm = WordNetLemmatizer()
-    stemmed = [Lemm.lemmatize(w) for w in lowercased]
+    STEMMER = PorterStemmer()
+    stemmed = [STEMMER.stem(w) for w in no_stopwords]
     vocab = list(set(stemmed))
     return vocab
 
