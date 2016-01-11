@@ -9,15 +9,22 @@ from pyspark.mllib.feature import HashingTF
 from pyspark.mllib.feature import IDF
 
 class TfToken(object):
-    def __init__(self, sc):
+    def __init__(self, sc, aws_link, tokenizer, filename=None):
         self.access_key = None
         self.secret_access_key = None
+        self.aws_link = aws_link
         self.link = None
         self.sc = sc
         self.token_rdd = None
+        self.filename = filename
+        self.tokenizer = tokenizer
 
+    def fit(self):
+        self.load_keys()
+        self.create_link(self.aws_link)
+        self.tfidf(self.tokenizer)
 
-    def load_keys(self, filename=None):
+    def load_keys(self):
         """
         load key pairs from bash_profile or \
         manually create a json file with:
@@ -32,13 +39,13 @@ class TfToken(object):
             self.access_key = os.environ['AWS_ACCESS_KEY_ID']
             self.secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
         except:
-            with open(filename) as f:
+            with open(self.filename) as f:
                 data = json.load(f)
                 self.access_key = data['ACCESS_KEY']
                 self.secret_access_key = data['SECRET_ACCESS_KEY']
 
     def create_link(self, aws_link):
-        self.link = 's3n://%s:%s@%s' % (self.access_key, self.secret_access_key, aws_link)
+        self.link = 's3n://%s:%s@%s' % (self.access_key, self.secret_access_key, self.aws_link)
 
     def _create_rdd(self, tokenizer):
         wiki_rdd = self.sc.textFile(self.link)
@@ -52,7 +59,7 @@ class TfToken(object):
         idf = IDF(minDocFreq=2).fit(tf)
         tfidf = idf.transform(tf)
         return tfidf
-        
+
 def tokenizing(text):
     regex = re.compile('<.+?>|[^a-zA-Z]')
     clean_txt = regex.sub(' ', text)
