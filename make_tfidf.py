@@ -9,6 +9,13 @@ from pyspark.mllib.feature import HashingTF
 from pyspark.mllib.feature import IDF
 
 class TfToken(object):
+        """
+        INPUT:
+        - sc: pyspark.SparkContext
+        - aws_link: aws link for your data, eg: jyt109/wiki_articles
+        - tokenizer: function object to tokenize each line in spark rdd
+        - filename: file with key pair info (optional if keypair info stored in bash_profile)
+        """
     def __init__(self, sc, aws_link, tokenizer, filename=None):
         self.access_key = None
         self.secret_access_key = None
@@ -20,6 +27,10 @@ class TfToken(object):
         self.tokenizer = tokenizer
 
     def fit(self):
+        """
+        OUTPUT:
+        - tfidf matrix rdd in sparse vector format for all files
+        """
         self.load_keys()
         self.create_link(self.aws_link)
         self.tfidf(self.tokenizer)
@@ -45,14 +56,25 @@ class TfToken(object):
                 self.secret_access_key = data['SECRET_ACCESS_KEY']
 
     def create_link(self, aws_link):
+        """
+        Create aws link with keypairs
+        """
         self.link = 's3n://%s:%s@%s' % (self.access_key, self.secret_access_key, self.aws_link)
 
     def _create_rdd(self, tokenizer):
+        """
+        Create rdd for the given aws link
+        Remove lines with #REDIRECT (for wikipedia dataset)
+        Tokenize data
+        """
         wiki_rdd = self.sc.textFile(self.link)
         wiki_no_redirect_rdd = wiki_rdd.filter(lambda line: '#REDIRECT' not in line)
         self.token_rdd = wiki_no_redirect_rdd.map(tokenizer)
 
     def tfidf(self, tokenizer):
+        """
+        Get TFIDF matrix rdd with spark tfidf functions
+        """
         self._create_rdd(tokenizer)
         hashingTF = HashingTF()
         tf = hashingTF.transform(self.token_rdd)
@@ -61,6 +83,9 @@ class TfToken(object):
         return tfidf
 
 def tokenizing(text):
+    """
+    Tokenize a single article to english words with a stemmer
+    """
     regex = re.compile('<.+?>|[^a-zA-Z]')
     clean_txt = regex.sub(' ', text)
     tokens = clean_txt.split()
