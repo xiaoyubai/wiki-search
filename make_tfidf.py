@@ -40,13 +40,13 @@ class TfToken(object):
     def create_link(self, aws_link):
         self.link = 's3n://%s:%s@%s' % (self.access_key, self.secret_access_key, aws_link)
 
-    def _create_rdd(self):
+    def _create_rdd(self, tokenizer):
         wiki_rdd = self.sc.textFile(self.link)
         wiki_no_redirect_rdd = wiki_rdd.filter(lambda line: '#REDIRECT' not in line)
-        self.token_rdd = wiki_no_redirect_rdd.map(tokenizing)
+        self.token_rdd = wiki_no_redirect_rdd.map(tokenizer)
 
-    def tfidf(self):
-        self._create_rdd()
+    def tfidf(self, tokenizer):
+        self._create_rdd(tokenizer)
         hashingTF = HashingTF()
         tf = hashingTF.transform(self.token_rdd)
         idf = IDF(minDocFreq=2).fit(tf)
