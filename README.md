@@ -4,13 +4,15 @@
 
 # 1.
 
-"""bash
+'''bash
 cd ~/Desktop/djj/ml/spark/spark-1.4.1-bin-hadoop2.4/ec2/
 ./spark-ec2 -k keypair -i ~/.ssh/keypair.pem login wtf2
-"""
+
+tmux new -s notebook1
+'''
 # 2.
 
-"""bash
+'''bash
 
 yum install -y tmux
 yum install -y pssh
@@ -30,6 +32,10 @@ pip2.7 install matplotlib
 pip2.7 install nltk
 pip2.7 install scipy
 pip2.7 install sklearn
+ipython -c "import nltk; nltk.download('punkt')"
+ipython -c "import nltk; nltk.download('stopwords')"
+ipython -c "import nltk; nltk.download('words')"
+ipython -c "import nltk; nltk.download('wordnet')"
 
 # Install all the necessary packages on Workers
 
@@ -44,9 +50,18 @@ pssh -t 10000 -h /root/spark-ec2/slaves pip2.7 install sklearn
 
 cd wiki-search
 git pull
-"""
+'''
 
 # 3.
 
-IPYTHON_OPTS="--ip=0.0.0.0" /root/spark/bin/pyspark \
---executor-memory 4G --driver-memory 4G
+'IPYTHON_OPTS="--ip=0.0.0.0" /root/spark/bin/pyspark \
+--executor-memory 4G --driver-memory 4G'
+
+or
+
+'IPYTHON_OPTS="notebook --ip=0.0.0.0" /root/spark/bin/pyspark \
+--executor-memory 4G --driver-memory 4G'
+
+# 4.
+
+'Use SparkContext.stop() to stop current instance'
