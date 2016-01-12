@@ -11,6 +11,7 @@ import json
 import string
 
 PUNCTUATION = set(string.punctuation)
+STOPWORDS = set(stopwords.words('english'))
 
 class TfToken(object):
     """
