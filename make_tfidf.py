@@ -35,7 +35,7 @@ class TfToken(object):
     def fit(self):
         """
         OUTPUT:
-        - tfidf matrix rdd in sparse vector format for all files
+        - article rdd and tfidf matrix rdd in sparse vector format for all files
         """
         self.load_keys()
         self.create_link(self.aws_link)
