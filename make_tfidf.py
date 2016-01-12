@@ -7,6 +7,8 @@ from collections import Counter
 from pyspark.mllib.clustering import KMeans
 from pyspark.mllib.feature import HashingTF
 from pyspark.mllib.feature import IDF
+import json
+
 
 class TfToken(object):
     """
