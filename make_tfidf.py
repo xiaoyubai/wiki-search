@@ -9,13 +9,13 @@ from pyspark.mllib.feature import HashingTF
 from pyspark.mllib.feature import IDF
 
 class TfToken(object):
-        """
-        INPUT:
-        - sc: pyspark.SparkContext
-        - aws_link: aws link for your data, eg: jyt109/wiki_articles
-        - tokenizer: function object to tokenize each line in spark rdd
-        - filename: file with key pair info (optional if keypair info stored in bash_profile)
-        """
+    """
+    INPUT:
+    - sc: pyspark.SparkContext
+    - aws_link: aws link for your data, eg: jyt109/wiki_articles
+    - tokenizer: function object to tokenize each line in spark rdd
+    - filename: file with key pair info (optional if keypair info stored in bash_profile)
+    """
     def __init__(self, sc, aws_link, tokenizer, filename=None):
         self.access_key = None
         self.secret_access_key = None
