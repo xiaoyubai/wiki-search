@@ -39,7 +39,7 @@ class TfToken(object):
         """
         self.load_keys()
         self.create_link(self.aws_link)
-        return self.rdd, self.tfidf(self.tokenizer)
+        return self.tfidf(self.tokenizer)
 
     def load_keys(self):
         """
@@ -86,7 +86,7 @@ class TfToken(object):
         tf = hashingTF.transform(self.token_rdd)
         idf = IDF(minDocFreq=2).fit(tf)
         tfidf = idf.transform(tf)
-        return tfidf
+        return self.rdd, tfidf
 
 def tokenizing(text):
     """
