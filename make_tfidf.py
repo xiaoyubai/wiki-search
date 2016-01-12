@@ -38,7 +38,8 @@ class TfToken(object):
         """
         self.load_keys()
         self.create_link(self.aws_link)
-        self.tfidf(self.tokenizer)
+        return self.tfidf(self.tokenizer)
+
 
     def load_keys(self):
         """
