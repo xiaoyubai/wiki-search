@@ -8,7 +8,9 @@ from pyspark.mllib.clustering import KMeans
 from pyspark.mllib.feature import HashingTF
 from pyspark.mllib.feature import IDF
 import json
+import string
 
+PUNCTUATION = set(string.punctuation)
 
 class TfToken(object):
     """
