@@ -30,6 +30,7 @@ class TfToken(object):
         self.token_rdd = None
         self.filename = filename
         self.tokenizer = tokenizer
+        self.rdd = None
 
     def fit(self):
         """
@@ -38,8 +39,7 @@ class TfToken(object):
         """
         self.load_keys()
         self.create_link(self.aws_link)
-        return self.tfidf(self.tokenizer)
-
+        return self.rdd, self.tfidf(self.tokenizer)
 
     def load_keys(self):
         """
@@ -73,9 +73,9 @@ class TfToken(object):
         Remove lines with #REDIRECT (for wikipedia dataset)
         Tokenize data
         """
-        wiki_rdd = self.sc.textFile(self.link)
-        wiki_no_redirect_rdd = wiki_rdd.filter(lambda line: '#REDIRECT' not in line)
-        self.token_rdd = wiki_no_redirect_rdd.map(tokenizer)
+        self.rdd = self.sc.textFile(self.link)
+        no_redirect_rdd = self.rdd.filter(lambda line: '#REDIRECT' not in line)
+        self.token_rdd = no_redirect_rdd.map(tokenizer)
 
     def tfidf(self, tokenizer):
         """
