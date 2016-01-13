@@ -72,7 +72,10 @@ or
 # 5.
 
 Set up which pytho to use with spark
-`export PYSPARK_PYTHON="/usr/local/ml/anaconda/bin/python"`
+add this line to bash_profile with emacs
+`export PYSPARK_PYTHON="/usr/bin/python27"`
+
+or
 
 In each python file set up which python to use
 `#!/full/path/to/specific/python27`
