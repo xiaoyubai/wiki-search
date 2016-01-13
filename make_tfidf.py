@@ -1,7 +1,7 @@
 import os
 import re
 # from nltk.stem.porter import PorterStemmer
-from nltk.stem import porter
+import nltk
 from nltk.corpus import stopwords, words, wordnet
 import string
 from collections import Counter
