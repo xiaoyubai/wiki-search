@@ -9,6 +9,7 @@ from pyspark.mllib.feature import HashingTF
 from pyspark.mllib.feature import IDF
 import json
 import string
+import pyspark as ps
 
 PUNCTUATION = set(string.punctuation)
 STOPWORDS = set(stopwords.words('english'))
@@ -74,6 +75,8 @@ class TfToken(object):
         Tokenize data
         """
         self.rdd = self.sc.textFile(self.link)
+        # take a subsample of wikipedia pages
+        self.rdd = self.sc.parallelize(self.rdd.take(600), 24)
         no_redirect_rdd = self.rdd.filter(lambda line: '#REDIRECT' not in line)
         self.token_rdd = no_redirect_rdd.map(tokenizer)
 
@@ -86,7 +89,7 @@ class TfToken(object):
         tf = hashingTF.transform(self.token_rdd)
         idf = IDF(minDocFreq=2).fit(tf)
         tfidf = idf.transform(tf)
-        return self.rdd, tfidf
+        return self.rdd, idf, tfidf
 
 def tokenizing(text):
     """
@@ -106,3 +109,9 @@ def tokenizing(text):
     STEMMER = PorterStemmer()
     stemmed = [STEMMER.stem(w) for w in no_stopwords]
     return [w for w in stemmed if w]
+
+if __name__ == '__main__':
+    sc = ps.SparkContext('local[4]')
+    aws_link = "wikisample10/sample2"
+    tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing)
+    rdd, idf, tfidf = tf_token.fit()
