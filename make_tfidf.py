@@ -113,7 +113,7 @@ def tokenizing(text):
     return [w for w in stemmed if w]
 
 if __name__ == '__main__':
-    sc = ps.SparkContext('local[4]')
+    sc = ps.SparkContext()
     aws_link = "wikisample10/sample2"
     tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing)
     rdd, idf, tfidf = tf_token.fit()
