@@ -1,4 +1,4 @@
-#!/full/path/to/specific/python27
+#!./usr/bin/python27
 
 import os
 import re
