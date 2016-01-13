@@ -1,7 +1,8 @@
+#!/full/path/to/specific/python27
+
 import os
 import re
-# from nltk.stem.porter import PorterStemmer
-# import nltk
+from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords, words, wordnet
 import string
 from collections import Counter
@@ -78,8 +79,8 @@ class TfToken(object):
         self.rdd = self.sc.textFile(self.link)
         # take a subsample of wikipedia pages
         self.rdd = self.sc.parallelize(self.rdd.take(600), 24)
-        no_redirect_rdd = self.rdd.filter(lambda line: '#REDIRECT' not in line)
-        self.token_rdd = no_redirect_rdd.map(tokenizer)
+        self.rdd = self.rdd.filter(lambda line: '#REDIRECT' not in line)
+        self.token_rdd = self.rdd.map(tokenizer)
 
     def tfidf(self, tokenizer):
         """
@@ -107,10 +108,9 @@ def tokenizing(text):
         no_punctuation.append(punct_removed)
     no_stopwords = [w for w in no_punctuation if not w in STOPWORDS]
 
-    #  = PorterStemmer()
-    # stemmed = [STEMMER.stem(w) for w in no_stopwords]
-    # return [w for w in stemmed if w]
-    return [w for w in no_stopwords if w]
+    STEMMER = PorterStemmer()
+    stemmed = [STEMMER.stem(w) for w in no_stopwords]
+    return [w for w in stemmed if w]
 
 if __name__ == '__main__':
     sc = ps.SparkContext('local[4]')
