@@ -1,7 +1,7 @@
 import os
 import re
 # from nltk.stem.porter import PorterStemmer
-import nltk
+# import nltk
 from nltk.corpus import stopwords, words, wordnet
 import string
 from collections import Counter
@@ -107,9 +107,10 @@ def tokenizing(text):
         no_punctuation.append(punct_removed)
     no_stopwords = [w for w in no_punctuation if not w in STOPWORDS]
 
-    STEMMER = PorterStemmer()
-    stemmed = [STEMMER.stem(w) for w in no_stopwords]
-    return [w for w in stemmed if w]
+    #  = PorterStemmer()
+    # stemmed = [STEMMER.stem(w) for w in no_stopwords]
+    # return [w for w in stemmed if w]
+    return [w for w in no_stopwords if w]
 
 if __name__ == '__main__':
     sc = ps.SparkContext('local[4]')
