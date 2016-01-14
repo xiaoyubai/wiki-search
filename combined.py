@@ -13,7 +13,6 @@ from pyspark.mllib.clustering import KMeans
 from pyspark.mllib.feature import HashingTF
 from pyspark.mllib.feature import IDF
 import json
-import string
 import pyspark as ps
 import numpy as np
 import cPickle as pickle
