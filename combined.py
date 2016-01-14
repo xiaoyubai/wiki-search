@@ -285,8 +285,8 @@ if __name__ == '__main__':
     category = "statistics math math"
 
     sc = ps.SparkContext()
-    # aws_link = "jyt109/wiki_articles"
-    aws_link = "wikisample10/sample2"
+    aws_link = "jyt109/wiki_articles"
+    # aws_link = "wikisample10/sample2"
 
     # filename="../keypair.json"
     # with open(filename) as f:
