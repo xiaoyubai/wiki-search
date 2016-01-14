@@ -114,9 +114,9 @@ def tokenizing(text):
         no_punctuation.append(punct_removed)
     no_stopwords = [w for w in no_punctuation if not w in STOPWORDS]
 
-    STEMMER = PorterStemmer()
-    stemmed = [STEMMER.stem(w) for w in no_stopwords]
-    return [w for w in stemmed if w]
+    # STEMMER = PorterStemmer()
+    # stemmed = [STEMMER.stem(w) for w in no_stopwords]
+    return [w for w in no_stopwords if w]
 
 
 def get_title_link(article):
