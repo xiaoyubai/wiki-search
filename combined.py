@@ -281,8 +281,9 @@ if __name__ == '__main__':
     aws_link = "jyt109/wiki_articles"
     tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing, filename="../keypair.json")
     rdd, idf, tfidf = tf_token.fit()
-    multi_links, title_tfidf, topic_model = train_model(rdd, idf, tfidf)
-    most_related_title, most_related_tfidf = get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf)
-    if same_topic(category, most_related_tfidf, idf, topic_model):
-        return_title = most_related_title
-    print most_related_title
+    print tfidf.take(2)[1]
+    # multi_links, title_tfidf, topic_model = train_model(rdd, idf, tfidf)
+    # most_related_title, most_related_tfidf = get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf)
+    # if same_topic(category, most_related_tfidf, idf, topic_model):
+    #     return_title = most_related_title
+    # print most_related_title
