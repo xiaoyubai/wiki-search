@@ -117,4 +117,3 @@ if __name__ == '__main__':
     aws_link = "wikisample10/sample2"
     tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing, filename="../keypair.json")
     rdd, idf, tfidf = tf_token.fit()
-    print tfidf.take(2)
