@@ -3,7 +3,10 @@ import os
 import re
 # from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords, words, wordnet
+from pyspark.mllib.recommendation import ALS, Rating
 from pyspark.mllib.linalg import Vectors, SparseVector
+from pyspark.mllib.classification import NaiveBayes, NaiveBayesModel
+from pyspark.mllib.regression import LabeledPoint
 import string
 from collections import Counter
 from pyspark.mllib.clustering import KMeans
@@ -14,6 +17,10 @@ import string
 import pyspark as ps
 import numpy as np
 import cPickle as pickle
+from collections import Counter
+
+
+
 
 sys.setrecursionlimit(2 ** 31 -1)
 
@@ -278,7 +285,8 @@ if __name__ == '__main__':
     category = "statistics math math"
 
     sc = ps.SparkContext()
-    aws_link = "jyt109/wiki_articles"
+    # aws_link = "jyt109/wiki_articles"
+    aws_link = "wikisample10/sample2"
 
     # filename="../keypair.json"
     # with open(filename) as f:
