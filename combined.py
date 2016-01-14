@@ -238,7 +238,7 @@ class TopicModel(object):
         self.tfidf_rating = self.tfidf.zipWithIndex().flatMap(method).map(lambda l: Rating(int(l[0]), int(l[1]), float(l[2])))
 
 
-    def label(self, rank=3, numIterations=10, alpha=0.01):
+    def label(self, rank=3, numIterations=1, alpha=0.01):
         """
         INPUT:
         - rank: number of topics
