@@ -288,23 +288,24 @@ if __name__ == '__main__':
 
     # aws_link = "wikisample10/sample2"
 
-    filename="../keypair.json"
-    with open(filename) as f:
-        data = json.load(f)
-        access_key = data['ACCESS_KEY']
-        secret_access_key = data['SECRET_ACCESS_KEY']
+    # filename="../keypair.json"
+    # with open(filename) as f:
+    #     data = json.load(f)
+    #     access_key = data['ACCESS_KEY']
+    #     secret_access_key = data['SECRET_ACCESS_KEY']
+    #
+    # link = 's3n://%s:%s@%s' % (access_key, secret_access_key, aws_link)
+    # rdd = sc.textFile(link)
+    # print rdd.count()
+    # print "rdd.getNumPartitions(): ", rdd.getNumPartitions()
 
-    link = 's3n://%s:%s@%s' % (access_key, secret_access_key, aws_link)
-    rdd = sc.textFile(link)
-    print rdd.count()
-    print "rdd.getNumPartitions(): ", rdd.getNumPartitions()
-
-    # tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing, filename="../keypair.json")
-    # rdd, idf, tfidf = tf_token.fit()
-    # print tfidf.take(2)[1]
-    # multi_links, title_tfidf, topic_model = train_model(rdd, idf, tfidf)
-    # most_related_title, most_related_tfidf = get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf)
-    # if same_topic(category, most_related_tfidf, idf, topic_model):
-    #     return_title = most_related_title
-    # f = open('result.csv', 'w')
-    # f.write(most_related_title)
+    tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing, filename="../keypair.json")
+    rdd, idf, tfidf = tf_token.fit()
+    print tfidf.take(2)[1]
+    f = open('result.csv', 'w')
+    f.write("tfidf done")
+    multi_links, title_tfidf, topic_model = train_model(rdd, idf, tfidf)
+    f.write("tfidf done, train_model done")
+    most_related_title, most_related_tfidf = get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf)
+    if same_topic(category, most_related_tfidf, idf, topic_model):
+        return_title = most_related_title
