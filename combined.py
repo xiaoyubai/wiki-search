@@ -244,7 +244,7 @@ class TopicModel(object):
         self.tfidf_rating = self.tfidf.zipWithIndex().flatMap(method).map(lambda l: Rating(int(l[0]), int(l[1]), float(l[2])))
 
 
-    def label(self, rank=100, numIterations=10, alpha=0.01):
+    def label(self, rank=50, numIterations=10, alpha=0.01):
         """
         INPUT:
         - rank: number of topics
@@ -309,3 +309,5 @@ if __name__ == '__main__':
     most_related_title, most_related_tfidf = get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf)
     if same_topic(category, most_related_tfidf, idf, topic_model):
         return_title = most_related_title
+    fw = "tfidf done, train_model done %s" % most_related_title
+    f.write(fw)
