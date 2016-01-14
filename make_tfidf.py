@@ -1,5 +1,6 @@
 #! /usr/bin python27
 
+import sys
 import os
 import re
 from nltk.stem.porter import PorterStemmer
@@ -12,6 +13,8 @@ from pyspark.mllib.feature import IDF
 import json
 import string
 import pyspark as ps
+
+sys.setrecursionlimit(2 ** 31 -1)
 
 PUNCTUATION = set(string.punctuation)
 STOPWORDS = set(stopwords.words('english'))
