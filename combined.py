@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 from nltk.stem.porter import PorterStemmer
@@ -14,6 +15,7 @@ import pyspark as ps
 import numpy as np
 import cPickle as pickle
 
+sys.setrecursionlimit(2 ** 31 -1)
 
 PUNCTUATION = set(string.punctuation)
 STOPWORDS = set(stopwords.words('english'))
@@ -96,115 +98,6 @@ class TfToken(object):
         tfidf = idf.transform(tf)
         return self.rdd, idf, tfidf
 
-def tokenizing(text):
-    """
-    Tokenize a single article to english words with a stemmer
-    """
-    regex = re.compile('<.+?>|[^a-zA-Z]')
-    clean_txt = regex.sub(' ', text)
-    tokens = clean_txt.split()
-    lowercased = [t.lower() for t in tokens]
-
-    no_punctuation = []
-    for word in lowercased:
-        punct_removed = ''.join([letter for letter in word if not letter in PUNCTUATION])
-        no_punctuation.append(punct_removed)
-    no_stopwords = [w for w in no_punctuation if not w in STOPWORDS]
-
-    STEMMER = PorterStemmer()
-    stemmed = [STEMMER.stem(w) for w in no_stopwords]
-    return [w for w in stemmed if w]
-
-
-def get_title_link(article):
-    try:
-        links = re.findall(r'\[\[(.*?)[\]\]|\|]', article)
-        title = re.search(r'\'\'\'(.*?)\'\'\'', article).group(1)
-        return title, "|".join(links)
-    except:
-        return "", [""]
-
-def get_title(article):
-    try:
-        title = re.search(r'\'\'\'(.*?)\'\'\'', article).group(1)
-        return title
-    except:
-        return " "
-
-def get_title_tfidf(title_string):
-    titles = title_string.split("|")
-    for title in titles:
-        yield title
-
-# calcuate cosine similarity between two sparse vectors
-def cosine_sim(v1, v2, origin):
-    try:
-        return v1.dot(v2) / (v1.squared_distance(origin) * v2.squared_distance(origin))
-    except:
-        return v1.dot(v2) / (v1.squared_distance(origin) * v2.squared_distance(origin) + 1)
-
-def max_cosine_sim(related_tfidf, tf_category):
-    num_cols = len(tf_category)
-    # initilize a 0 sparse vector to calcuate norm+
-    origin = SparseVector(num_cols, {})
-    title_cos_sim = np.array([[title, cosine_sim(vector, tf_category, origin)] for title, vector in related_tfidf])
-    print title_cos_sim
-    return title_cos_sim[np.argmax(title_cos_sim[:,1]),0]
-
-def get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf):
-    tf_category = transform(idf, category)
-    related_links = multi_links.map(get_title_link).filter(lambda x: x[0]==keyword).map(lambda x: x[1]).first().split("|")
-    # related_tfidf = title_tfidf.take(3)
-    related_tfidf = title_tfidf.filter(lambda x: x[0] in related_links).collect()
-    most_related_title = max_cosine_sim(related_tfidf,  tf_category)
-    most_related_tfidf = title_tfidf.filter(lambda x: x[0]==keyword).map(lambda x: x[1]).collect()[0]
-    return most_related_title, most_related_tfidf
-
-
-def same_topic(category, most_related_tfidf, idf, topic_model):
-    category_tfidf = transform(idf, category)
-    category_topic = topic_model.predict(category_tfidf)
-    article_topic = topic_model.predict(most_related_tfidf)
-    if category_topic == article_topic:
-        return True
-    else:
-        return False
-
-def train_model(rdd, idf, tfidf):
-    multi_links = rdd.filter(lambda line: "may refer to:" in line)
-    title_rdd = rdd.map(get_title)
-    title_index = title_rdd.zipWithIndex().map(lambda x: (x[1], x[0]))
-    tfidf_index = tfidf.zipWithIndex().map(lambda x: (x[1], x[0]))
-    title_tfidf = title_index.join(tfidf_index).map(lambda x: x[1])
-
-    topic_model = TopicModel(idf=idf, tfidf=tfidf)
-    topic_model.preprocessing()
-    topic_model.label()
-    topic_model.train()
-
-    return multi_links, title_tfidf, topic_model
-
-
-def convert_rating(sparse_vector_and_index):
-    """
-    INPUT:
-    - sparse_vector and index combined
-    OUTPUT:
-    - tuple of (user, movie, rating) format
-    """
-    sparse_vector, index = sparse_vector_and_index
-    for key, value in zip(sparse_vector.indices, sparse_vector.values):
-        if value != 0:
-            yield (index, key, value)
-
-def transform(idf, article):
-    """
-    transform article to a sparse vector
-    """
-    token = tokenizing(article)
-    hashingTF = HashingTF()
-    tf_test = hashingTF.transform(token)
-    return idf.transform(tf_test)
 
 class TopicModel(object):
     """
@@ -260,6 +153,123 @@ class TopicModel(object):
         Predict topic based on any string
         """
         return self.model.predict(tfidf_test)
+
+
+def tokenizing(text):
+    """
+    Tokenize a single article to english words with a stemmer
+    """
+    regex = re.compile('<.+?>|[^a-zA-Z]')
+    clean_txt = regex.sub(' ', text)
+    tokens = clean_txt.split()
+    lowercased = [t.lower() for t in tokens]
+
+    no_punctuation = []
+    for word in lowercased:
+        punct_removed = ''.join([letter for letter in word if not letter in PUNCTUATION])
+        no_punctuation.append(punct_removed)
+    no_stopwords = [w for w in no_punctuation if not w in STOPWORDS]
+
+    STEMMER = PorterStemmer()
+    stemmed = [STEMMER.stem(w) for w in no_stopwords]
+    return [w for w in stemmed if w]
+
+
+def get_title_link(article):
+    try:
+        links = re.findall(r'\[\[(.*?)[\]\]|\|]', article)
+        title = re.search(r'\'\'\'(.*?)\'\'\'', article).group(1)
+        return title, "|".join(links)
+    except:
+        return "", [""]
+
+
+def get_title(article):
+    try:
+        title = re.search(r'\'\'\'(.*?)\'\'\'', article).group(1)
+        return title
+    except:
+        return " "
+
+
+def get_title_tfidf(title_string):
+    titles = title_string.split("|")
+    for title in titles:
+        yield title
+
+
+# calcuate cosine similarity between two sparse vectors
+def cosine_sim(v1, v2, origin):
+    try:
+        return v1.dot(v2) / (v1.squared_distance(origin) * v2.squared_distance(origin))
+    except:
+        return v1.dot(v2) / (v1.squared_distance(origin) * v2.squared_distance(origin) + 1)
+
+def max_cosine_sim(related_tfidf, tf_category):
+    num_cols = len(tf_category)
+    # initilize a 0 sparse vector to calcuate norm+
+    origin = SparseVector(num_cols, {})
+    title_cos_sim = np.array([[title, cosine_sim(vector, tf_category, origin)] for title, vector in related_tfidf])
+    print title_cos_sim
+    return title_cos_sim[np.argmax(title_cos_sim[:,1]),0]
+
+
+def get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf):
+    tf_category = transform(idf, category)
+    related_links = multi_links.map(get_title_link).filter(lambda x: x[0]==keyword).map(lambda x: x[1]).first().split("|")
+    # related_tfidf = title_tfidf.take(3)
+    related_tfidf = title_tfidf.filter(lambda x: x[0] in related_links).collect()
+    most_related_title = max_cosine_sim(related_tfidf,  tf_category)
+    most_related_tfidf = title_tfidf.filter(lambda x: x[0]==keyword).map(lambda x: x[1]).collect()[0]
+    return most_related_title, most_related_tfidf
+
+
+def same_topic(category, most_related_tfidf, idf, topic_model):
+    category_tfidf = transform(idf, category)
+    category_topic = topic_model.predict(category_tfidf)
+    article_topic = topic_model.predict(most_related_tfidf)
+    if category_topic == article_topic:
+        return True
+    else:
+        return False
+
+
+def train_model(rdd, idf, tfidf):
+    multi_links = rdd.filter(lambda line: "may refer to:" in line)
+    title_rdd = rdd.map(get_title)
+    title_index = title_rdd.zipWithIndex().map(lambda x: (x[1], x[0]))
+    tfidf_index = tfidf.zipWithIndex().map(lambda x: (x[1], x[0]))
+    title_tfidf = title_index.join(tfidf_index).map(lambda x: x[1])
+
+    topic_model = TopicModel(idf=idf, tfidf=tfidf)
+    topic_model.preprocessing()
+    topic_model.label()
+    topic_model.train()
+
+    return multi_links, title_tfidf, topic_model
+
+
+def convert_rating(sparse_vector_and_index):
+    """
+    INPUT:
+    - sparse_vector and index combined
+    OUTPUT:
+    - tuple of (user, movie, rating) format
+    """
+    sparse_vector, index = sparse_vector_and_index
+    for key, value in zip(sparse_vector.indices, sparse_vector.values):
+        if value != 0:
+            yield (index, key, value)
+
+
+def transform(idf, article):
+    """
+    transform article to a sparse vector
+    """
+    token = tokenizing(article)
+    hashingTF = HashingTF()
+    tf_test = hashingTF.transform(token)
+    return idf.transform(tf_test)
 
 
 if __name__ == '__main__':
