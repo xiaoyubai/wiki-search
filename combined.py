@@ -295,8 +295,8 @@ if __name__ == '__main__':
         secret_access_key = data['SECRET_ACCESS_KEY']
 
     link = 's3n://%s:%s@%s' % (access_key, secret_access_key, aws_link)
-    rdd = sc.textFile(link).partitionBy(180)
-    print rdd.first()
+    rdd = sc.textFile(link)
+    print rdd.count()
     print "rdd.getNumPartitions(): ", rdd.getNumPartitions()
 
     # tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing, filename="../keypair.json")
