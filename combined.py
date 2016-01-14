@@ -35,7 +35,7 @@ class TfToken(object):
     - tokenizer: function object to tokenize each line in spark rdd
     - filename: file with key pair info (optional if keypair info stored in bash_profile)
     """
-    def __init__(self, sc, aws_link, tokenizer, filename=None):
+    def __init__(self, sc, aws_link, tokenizer, filename=None, numPartition=200):
         self.access_key = None
         self.secret_access_key = None
         self.aws_link = aws_link
@@ -45,6 +45,7 @@ class TfToken(object):
         self.filename = filename
         self.tokenizer = tokenizer
         self.rdd = None
+        self.num_partition = numPartition
 
     def fit(self):
         """
@@ -87,7 +88,7 @@ class TfToken(object):
         Remove lines with #REDIRECT (for wikipedia dataset)
         Tokenize data
         """
-        self.rdd = self.sc.textFile(self.link)
+        self.rdd = self.sc.textFile(self.link, self.num_partition)
         # take a subsample of wikipedia pages
         # self.rdd = self.sc.parallelize(self.rdd.take(600), 24)
         self.rdd = self.rdd.filter(lambda line: '#REDIRECT' not in line)
