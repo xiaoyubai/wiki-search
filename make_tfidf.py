@@ -78,7 +78,7 @@ class TfToken(object):
         """
         self.rdd = self.sc.textFile(self.link)
         # take a subsample of wikipedia pages
-        self.rdd = self.sc.parallelize(self.rdd.take(600), 24)
+        # self.rdd = self.sc.parallelize(self.rdd.take(600), 24)
         self.rdd = self.rdd.filter(lambda line: '#REDIRECT' not in line)
         self.token_rdd = self.rdd.map(tokenizer)
 

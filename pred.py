@@ -55,9 +55,9 @@ def max_cosine_sim(related_tfidf, tf_category):
 
 def get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf):
     tf_category = transform(idf, category)
-    # related_links = multi_links.map(get_title_link).filter(lambda x: x[0]==keyword).map(lambda x: x[1]).first().split("|")
-    related_tfidf = title_tfidf.take(3)
-    # related_tfidf = title_tfidf.filter(lambda x: x[0] in related_links).collect()
+    related_links = multi_links.map(get_title_link).filter(lambda x: x[0]==keyword).map(lambda x: x[1]).first().split("|")
+    # related_tfidf = title_tfidf.take(3)
+    related_tfidf = title_tfidf.filter(lambda x: x[0] in related_links).collect()
     most_related_title = max_cosine_sim(related_tfidf,  tf_category)
     most_related_tfidf = title_tfidf.filter(lambda x: x[0]==keyword).map(lambda x: x[1]).collect()[0]
     return most_related_title, most_related_tfidf
@@ -92,10 +92,11 @@ if __name__ == '__main__':
     category = "statistics math math"
 
     sc = ps.SparkContext()
-    aws_link = "wikisample10/sample2"
+    aws_link = "jyt109/wiki_articles"
     tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing, filename="../keypair.json")
     rdd, idf, tfidf = tf_token.fit()
     multi_links, title_tfidf, topic_model = train_model(rdd, idf, tfidf)
     most_related_title, most_related_tfidf = get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf)
     if same_topic(category, most_related_tfidf, idf, topic_model):
         return_title = most_related_title
+    print most_related_title
