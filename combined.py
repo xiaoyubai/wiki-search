@@ -1,7 +1,7 @@
 import sys
 import os
 import re
-from nltk.stem.porter import PorterStemmer
+# from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords, words, wordnet
 from pyspark.mllib.linalg import Vectors, SparseVector
 import string
