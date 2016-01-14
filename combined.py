@@ -160,7 +160,7 @@ def max_cosine_sim(related_tfidf, tf_category):
     # initilize a 0 sparse vector to calcuate norm+
     origin = SparseVector(num_cols, {})
     title_cos_sim = np.array([[title, cosine_sim(vector, tf_category, origin)] for title, vector in related_tfidf])
-    print title_cos_sim
+    np.savetxt("cos_sim.csv", title_cos_sim, delimiter=",")
     return title_cos_sim[np.argmax(title_cos_sim[:,1]),0]
 
 
@@ -304,4 +304,5 @@ if __name__ == '__main__':
     most_related_title, most_related_tfidf = get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf)
     if same_topic(category, most_related_tfidf, idf, topic_model):
         return_title = most_related_title
-    print most_related_title
+    f = open('result.csv', 'w')
+    f.write(most_related_title)
