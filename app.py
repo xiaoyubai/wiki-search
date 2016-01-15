@@ -1,7 +1,6 @@
-from collections import Counter
 from flask import Flask, request, redirect, render_template
 app = Flask(__name__)
-import cPickle as pickle
+# import cPickle as pickle
 import pandas as pd
 
 
@@ -30,10 +29,9 @@ def submission_page():
 @app.route('/submit', methods=['POST'] )
 def word_counter():
     text = str(request.form['user_input'])
-    keyword, category = text.split(" in ")
-
     search_words = "+".join(text.split())
     link = "http://en.wikipedia.org/wiki/Special:Search?search=%s&go=Go" % search_words
+        
     return redirect(link)
     # x = text.split(' ')
     #
