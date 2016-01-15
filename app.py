@@ -31,7 +31,7 @@ def word_counter():
     text = str(request.form['user_input'])
     search_words = "+".join(text.split())
     link = "http://en.wikipedia.org/wiki/Special:Search?search=%s&go=Go" % search_words
-        
+
     return redirect(link)
     # x = text.split(' ')
     #
