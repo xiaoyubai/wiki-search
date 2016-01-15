@@ -17,6 +17,9 @@ import pyspark as ps
 import numpy as np
 import cPickle as pickle
 from collections import Counter
+import boto
+from boto.s3.connection import S3Connection
+from boto.s3.key import Key
 
 sys.setrecursionlimit(2 ** 31 -1)
 
@@ -34,9 +37,9 @@ class TfToken(object):
     - tokenizer: function object to tokenize each line in spark rdd
     - filename: file with key pair info (optional if keypair info stored in bash_profile)
     """
-    def __init__(self, sc, aws_link, tokenizer, filename=None, numPartition=200):
-        self.access_key = None
-        self.secret_access_key = None
+    def __init__(self, sc, aws_link, tokenizer, access_key, secret_access_key, numPartition=200):
+        self.access_key = access_key
+        self.secret_access_key = secret_access_key
         self.aws_link = aws_link
         self.link = None
         self.sc = sc
@@ -54,26 +57,6 @@ class TfToken(object):
         self.load_keys()
         self.create_link(self.aws_link)
         return self.tfidf(self.tokenizer)
-
-    def load_keys(self):
-        """
-        load key pairs from bash_profile or \
-        manually create a json file with:
-
-        cat aws.json
-        {"ACCESS_KEY": "ACCESS_KEY", "SECRET_ACCESS_KEY": "SECRET_ACCESS_KEY"}
-        Use json.load to load keys
-
-        filename is optional if key is stored in bash_profile or bashrc
-        """
-        try:
-            self.access_key = os.environ['AWS_ACCESS_KEY_ID']
-            self.secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
-        except:
-            with open(self.filename) as f:
-                data = json.load(f)
-                self.access_key = data['ACCESS_KEY']
-                self.secret_access_key = data['SECRET_ACCESS_KEY']
 
     def create_link(self, aws_link):
         """
@@ -339,24 +322,70 @@ class TopicModel(object):
         return self.model.predict(tfidf_test)
 
 
-if __name__ == '__main__':
+def keypairs(filename=None):
+    """
+    load key pairs from bash_profile or \
+    manually create a json file with:
 
+    cat aws.json
+    {"ACCESS_KEY": "ACCESS_KEY", "SECRET_ACCESS_KEY": "SECRET_ACCESS_KEY"}
+    Use json.load to load keys
+
+    filename is optional if key is stored in bash_profile or bashrc
+    """
+    try:
+        access_key = os.environ['AWS_ACCESS_KEY_ID']
+        secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+    except:
+        with open(filename) as f:
+            data = json.load(f)
+            access_key = data['ACCESS_KEY']
+            secret_access_key = data['SECRET_ACCESS_KEY']
+    return access_key, secret_access_key
+
+
+def save_rdd_to_file(rdd, key_name, access_key, secret_access_key):
+    """
+    connect to s3 and save rdd file to s3
+    """
+    conn = S3Connection(access_key, secret_access_key)
+    bucket_name = 'wiki-search'
+
+    if conn.lookup(bucket_name) is None:
+        b = conn.create_bucket(bucket_name)
+    else:
+        b = conn.get_bucket(bucket_name)
+
+    k = Key(b)
+    k.key = key_name
+
+    rdd.saveAsTextFile('s3://%s:%s@%s/%s' % (access_key, secret_access_key, bucket_name, key_name))
+
+
+def main():
+    """
+    For now, only testing with keyword and category separately, they should be user input from web app
+    """
     keyword = "recall"
     category = "statistics math math"
 
     sc = ps.SparkContext()
     aws_link = "jyt109/wiki_articles"
 
+    access_key, secret_access_key = keypairs("../keypair.json")
+
     # preprocessing S3 data into rdd, tfidf vectors and save the transformer
-    tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing, filename="../keypair.json")
+    tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing, access_key, secret_access_key)
+    # Trying to find ways to save idf model, pickle doesn't work
     rdd, idf, tfidf = tf_token.fit()
 
-    f = open('result.csv', 'w')
-    f.write("tfidf done")
+    save_rdd_to_file(rdd, 'rdd123', access_key, secret_access_key)
+    save_rdd_to_file(tfidf, 'tfidf', access_key, secret_access_key)
+
 
     # train model with matrix factorization
+    # will save rdds multi_links, title_tfidf to s3 later, but need help saving model
     multi_links, title_tfidf, topic_model = train_model(rdd, idf, tfidf)
-    f.write("tfidf done, train_model done")
 
     try:
         # check keyword in title_tfidf for all pages with multiple meanings
@@ -380,3 +409,6 @@ if __name__ == '__main__':
 
     # redirect_link is ready for flask app
     redirect_link = "https://www.wikipedia.org/wiki/" + return_title
+
+if __name__ == '__main__':
+    main()
