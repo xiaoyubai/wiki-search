@@ -18,9 +18,6 @@ import numpy as np
 import cPickle as pickle
 from collections import Counter
 
-
-
-
 sys.setrecursionlimit(2 ** 31 -1)
 
 PUNCTUATION = set(string.punctuation)
@@ -29,6 +26,8 @@ STOPWORDS = set(stopwords.words('english'))
 
 class TfToken(object):
     """
+    Preprocessing data in S3 into rdd, tfidf vectors
+
     INPUT:
     - sc: pyspark.SparkContext
     - aws_link: aws link for your data, eg: jyt109/wiki_articles
@@ -127,6 +126,9 @@ def tokenizing(text):
 
 
 def get_title_link(article):
+    """
+    Use regular expression to get title and all links in each wikipage
+    """
     try:
         links = re.findall(r'\[\[(.*?)[\]\]|\|]', article)
         title = re.search(r'\'\'\'(.*?)\'\'\'', article).group(1)
@@ -136,6 +138,9 @@ def get_title_link(article):
 
 
 def get_title(article):
+    """
+    Use regular expression to get title in each wikipage
+    """
     try:
         title = re.search(r'\'\'\'(.*?)\'\'\'', article).group(1)
         return title
@@ -144,19 +149,35 @@ def get_title(article):
 
 
 def get_title_tfidf(title_string):
+    """
+    Flat map related links in each grouped title
+    eg: title has multiple meanings
+    """
     titles = title_string.split("|")
     for title in titles:
         yield title
 
 
-# calcuate cosine similarity between two sparse vectors
 def cosine_sim(v1, v2, origin):
+    """
+    Calcuate cosine similarity for sparse vectors based on functions in mllib
+
+    INPUT: two vectors and origin
+    OUTPUT: cosine similarity
+    """
     try:
         return v1.dot(v2) / (v1.squared_distance(origin) * v2.squared_distance(origin))
     except:
         return v1.dot(v2) / (v1.squared_distance(origin) * v2.squared_distance(origin) + 1)
 
 def max_cosine_sim(related_tfidf, tf_category):
+    """
+    Calcuate cosine similarities between user input category and all possible pages for the same keyword
+    Save the cosine similarity matrix to file for checking
+
+    INPUT: tfidf for all related pages, tfidf for input category
+    OUTPUT: title with highest cosine similarity with the category
+    """
     num_cols = len(tf_category)
     # initilize a 0 sparse vector to calcuate norm+
     origin = SparseVector(num_cols, {})
@@ -166,16 +187,41 @@ def max_cosine_sim(related_tfidf, tf_category):
 
 
 def get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf):
+    """
+    Find most related article based one keyword and category
+
+    INPUT:
+    - idf: to transform category string
+    - keyword: to get all relevent links in that page
+    - category: to find the highest cosine similarity, since all pages are very relevent to keyword, it's better to only use category
+    - multi_links: all pages with multiple links with similar keyword
+    - title_tfidf: tuple rdd of (title, tfidf) for all wikipages and used to find the tfidf for any given title
+
+    OUTPUT:
+    - most related title
+    - tfidf for most related title
+    """
     tf_category = transform(idf, category)
     related_links = multi_links.map(get_title_link).filter(lambda x: x[0]==keyword).map(lambda x: x[1]).first().split("|")
     # related_tfidf = title_tfidf.take(3)
     related_tfidf = title_tfidf.filter(lambda x: x[0] in related_links).collect()
     most_related_title = max_cosine_sim(related_tfidf,  tf_category)
-    most_related_tfidf = title_tfidf.filter(lambda x: x[0]==keyword).map(lambda x: x[1]).collect()[0]
+    most_related_tfidf = title_tfidf.filter(lambda x: x[0]==most_related_title).map(lambda x: x[1]).collect()[0]
     return most_related_title, most_related_tfidf
 
 
 def same_topic(category, most_related_tfidf, idf, topic_model):
+    """
+    Check if most related title and input category are in the same topic group from model prediction
+
+    INPUT:
+    - user input category
+    - tfidf for most related link
+    - als model after training with all wiki pages
+
+    OUTPUT:
+    - Boolean: If category and the most relavent article are in the same topic group
+    """
     category_tfidf = transform(idf, category)
     category_topic = topic_model.predict(category_tfidf)
     article_topic = topic_model.predict(most_related_tfidf)
@@ -186,6 +232,19 @@ def same_topic(category, most_related_tfidf, idf, topic_model):
 
 
 def train_model(rdd, idf, tfidf):
+    """
+    Train clusters with als model in mllib
+
+    INPUT:
+    - rdd: rdd of all raw wiki pages
+    - idf: transformer for test strings
+    - tfidf: vectorized rdd for all wiki pages
+
+    OUTPUT:
+    - multi_links: keyword may have multiple meanings
+    - title_tfidf: tuple rdd of title and corresponding tfidf
+    - topic_model: als model after training with all wiki pages
+    """
     multi_links = rdd.filter(lambda line: "may refer to:" in line)
     title_rdd = rdd.map(get_title)
     title_index = title_rdd.zipWithIndex().map(lambda x: (x[1], x[0]))
@@ -265,6 +324,7 @@ class TopicModel(object):
         """
         Train NaiveBayes model
         """
+        self.label()
         self.model = NaiveBayes.train(self.train_data, 1.0)
         if score:
             training, test = self.train_data.randomSplit([0.6, 0.4], seed=0)
@@ -287,28 +347,36 @@ if __name__ == '__main__':
     sc = ps.SparkContext()
     aws_link = "jyt109/wiki_articles"
 
-    # aws_link = "wikisample10/sample2"
-
-    # filename="../keypair.json"
-    # with open(filename) as f:
-    #     data = json.load(f)
-    #     access_key = data['ACCESS_KEY']
-    #     secret_access_key = data['SECRET_ACCESS_KEY']
-    #
-    # link = 's3n://%s:%s@%s' % (access_key, secret_access_key, aws_link)
-    # rdd = sc.textFile(link)
-    # print rdd.count()
-    # print "rdd.getNumPartitions(): ", rdd.getNumPartitions()
-
+    # preprocessing S3 data into rdd, tfidf vectors and save the transformer
     tf_token = TfToken(sc=sc, aws_link=aws_link, tokenizer=tokenizing, filename="../keypair.json")
     rdd, idf, tfidf = tf_token.fit()
-    print tfidf.take(2)[1]
+
     f = open('result.csv', 'w')
     f.write("tfidf done")
+
+    # train model with matrix factorization
     multi_links, title_tfidf, topic_model = train_model(rdd, idf, tfidf)
     f.write("tfidf done, train_model done")
-    most_related_title, most_related_tfidf = get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf)
-    if same_topic(category, most_related_tfidf, idf, topic_model):
-        return_title = most_related_title
-    fw = "tfidf done, train_model done %s" % most_related_title
-    f.write(fw)
+
+    try:
+        # check keyword in title_tfidf for all pages with multiple meanings
+        if title_tfidf.filter(lambda x: x[0]==keyword).collect():
+            most_related_title, most_related_tfidf = get_most_similiar_ariticle(idf, keyword, category, multi_links, title_tfidf)
+            # if category and the most related article are in the same cluster
+            if same_topic(category, most_related_tfidf, idf, topic_model):
+                # connect strings with "_" to be put in urls later
+                return_title = "_".join(most_related_title)
+            fw = "tfidf done, train_model done %s" % most_related_title
+            f.write(fw)
+        # if keyword not in the page with multiple meanings, which means keyword in other title which has unique meaning
+        elif rdd.map(get_title).filter(lambda x: x==keyword).collect():
+            return_title = "_".join(keyword)
+        # no keyword found in all titles, use search function in wikipedia
+        else:
+            return_title = "Special:Search?search=%s&go=Go" % ("+".join(keyword.split()))
+    # if there is an error or nothing applies, use search function in wikipedia
+    except:
+        return_title = "Special:Search?search=%s&go=Go" % ("+".join(keyword.split()))
+
+    # redirect_link is ready for flask app
+    redirect_link = "https://www.wikipedia.org/wiki/" + return_title
