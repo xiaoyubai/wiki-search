@@ -24,6 +24,7 @@ possible meanings/links for user to choose from. However, if a user use combinat
 #### Potential probalems:
 
 * It is hard to pickle models in mllib
+* I didn't find packages that can pickle idf model in mllib, instead, I pickled the idf.idf() into s3, which is a idf matrix, and then use it to make transformation for new input
 
 
 ### References
